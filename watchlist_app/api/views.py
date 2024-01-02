@@ -10,6 +10,8 @@ from rest_framework.views import APIView
 from rest_framework import generics
 from rest_framework import mixins
 from rest_framework import viewsets
+from rest_framework.exceptions import ValidationError
+
 
 ### CLASS BASED VIEWS - 
 class ReviewList(generics.ListCreateAPIView):
@@ -214,7 +216,7 @@ class StreamPlatformVS(viewsets.ViewSet):
         return Response(serializer.data)
     
     def create(self, request):
-        serializer = StreamPlatformSerializer(request.data)
+        serializer = StreamPlatformSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -238,3 +240,7 @@ class StreamPlatformVS(viewsets.ViewSet):
         platform.delete()
         content = {'message': 'Platform deleted'}
         return Response(content, status=status.HTTP_204_NO_CONTENT)
+
+#############################
+    
+
