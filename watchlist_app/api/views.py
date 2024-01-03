@@ -11,24 +11,50 @@ from rest_framework import generics
 from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 
+from watchlist_app.api.permissions import AdminOrReadOnly, ReviewUserOrReadOnly
 
 ### CLASS BASED VIEWS - 
 class ReviewList(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    # permission_classes = [AdminOrReadOnly]
+    permission_classes = [ReviewUserOrReadOnly]
 
 class MoviewReviewList(generics.ListCreateAPIView):
     # queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    permission_classes = [ReviewUserOrReadOnly]
 
     def get_queryset(self):
         pk = self.kwargs['pk']
         return Review.objects.filter(watchlist=pk)
     
+    def perform_create(self, serializer):
+        pk = self.kwargs.get('pk')
+        watchlist = WatchList.objects.get(pk=pk)
+
+        reviewer = self.request.user
+        review_qs = Review.objects.filter(watchlist=watchlist)
+        review_per_reviewer_qs = review_qs.filter(reviewer=reviewer)
+
+        if review_per_reviewer_qs.exists():
+            raise ValidationError('You have already reviewed this movie')
+        
+        if watchlist.rating_count == 0:
+            watchlist.avg_rating = serializer.validated_data['rating']
+        else:
+            watchlist.avg_rating = (watchlist.avg_rating + serializer.validated_data['rating'])/2
+        # watchlist.rating_count = review_qs.count()
+        watchlist.rating_count += 1
+        watchlist.save()
+        serializer.save(watchlist=watchlist, reviewer=reviewer)
+    
 class MoviewReviewDetail(generics.RetrieveUpdateDestroyAPIView):
 
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         pk = self.kwargs['pk']
@@ -42,7 +68,24 @@ class MoviewReviewDetail(generics.RetrieveUpdateDestroyAPIView):
 class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    permission_classes = [ReviewUserOrReadOnly]
 
+class ReviewCreateGAV(generics.CreateAPIView):
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        return Review.objects.all()
+    
+    def perform_create(self, serializer):
+        pk = self.kwargs.get('pk')
+        watchlist = WatchList.objects.get(pk=pk)
+
+        reviewer = self.request.user
+        review_qs = Review.objects.filter(watchlist=watchlist, reviewer=reviewer)
+
+        if review_qs.exists():
+            raise ValidationError('You have already reviewed this movie')
+        serializer.save(watchlist=watchlist, reviewer=reviewer)
 
 ### CLASS BASED VIEWS - Mixins ###
 
