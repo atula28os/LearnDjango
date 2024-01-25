@@ -1,0 +1,15 @@
+{
+    "python.defaultInterpreterPath": "C:\\Users\\atulk\\Downloads\\Learnings\\API\\LearnAPI\\.venv\\Scripts\\python.exe",
+    "git.openRepositoryInParentFolders": "never",
+    "python.analysis.inlayHints.callArgumentNames": "all",
+    "python.analysis.typeCheckingMode": "basic",
+    "editor.minimap.enabled": false,
+    "editor.linkedEditing": true,
+    "emmet.includeLanguages": {
+        "django-html": "html"
+    },
+    "django.snippets.exclude": [
+        "cms",
+        "wagtail"
+    ]
+}

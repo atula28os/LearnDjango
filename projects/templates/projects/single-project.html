@@ -1,0 +1,28 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+    <h1>Single Project Template</h1>
+
+    <h1>Project Info</h1>
+
+    <ul>
+        
+        <li>{{ project.id }}</li>
+        <li>
+            {{ project.title}}
+        </li>
+        <li>
+            {{ project.description}}
+        </li>
+        <p>Tags:</p>
+        {% for tag in tags %}
+        <ol> {{tag}} </ol>
+        {% endfor %}
+    </ul>
+
+    <a href="{% url "update-project" project.id %}">Update Project</a>
+    <a href="{% url "delete-project" project.id %}">Delete Project</a>
+
+
+{% endblock %}
