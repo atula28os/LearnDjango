@@ -12,20 +12,41 @@ from rest_framework import mixins
 from rest_framework import viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.authentication import TokenAuthentication
 
 from watchlist_app.api.permissions import AdminOrReadOnly, ReviewUserOrReadOnly
+
+from django.contrib.auth import login, logout, authenticate
+from rest_framework.throttling import UserRateThrottle
+
+from watchlist_app.api.throttling import ReviewCreateThrottle, ReviewListThrottle
+
+
+### LOGIN 
+def my_view(request):
+    username = request.POST["username"]
+    password = request.POST["password"]
+    user = authenticate(request, username=username, password=password)
+    if user is not None:
+        login(request, user)
+    else:
+        # Return an 'invalid login' error message.
+        return Response('Invalid User Credentials', status=status.HTTP_401_UNAUTHORIZED)
+
 
 ### CLASS BASED VIEWS - 
 class ReviewList(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     # permission_classes = [AdminOrReadOnly]
-    permission_classes = [ReviewUserOrReadOnly]
+    permission_classes = [AdminOrReadOnly]
+    throttle_classes =[ReviewListThrottle]
 
 class MoviewReviewList(generics.ListCreateAPIView):
     # queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [ReviewUserOrReadOnly]
+    throttle_classes =[ReviewListThrottle]
 
     def get_queryset(self):
         pk = self.kwargs['pk']
@@ -46,13 +67,14 @@ class MoviewReviewList(generics.ListCreateAPIView):
             watchlist.avg_rating = serializer.validated_data['rating']
         else:
             watchlist.avg_rating = (watchlist.avg_rating + serializer.validated_data['rating'])/2
-        # watchlist.rating_count = review_qs.count()
+       
         watchlist.rating_count += 1
         watchlist.save()
         serializer.save(watchlist=watchlist, reviewer=reviewer)
     
 class MoviewReviewDetail(generics.RetrieveUpdateDestroyAPIView):
 
+    authentication_classes = [TokenAuthentication]
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
     
@@ -69,9 +91,11 @@ class ReviewDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [ReviewUserOrReadOnly]
+    throttle_classes = [UserRateThrottle]
 
 class ReviewCreateGAV(generics.CreateAPIView):
     serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Review.objects.all()
@@ -163,6 +187,8 @@ class ReviewCreateGAV(generics.CreateAPIView):
     
 class StreamPlatformListAV(APIView):
 
+    permission_classes = [AdminOrReadOnly]
+
     def get(self, request):
         platforms = StreamPlatform.objects.all()
         # serializer = StreamPlatformSerializer(platforms, many=True, context={'request': request})
@@ -178,6 +204,8 @@ class StreamPlatformListAV(APIView):
             return Response(serializer.errors)
 
 class StreamPlatformDetailAV(APIView):
+
+    permission_classes = [AdminOrReadOnly]
 
     def get(self, request, spk):
         try:
@@ -204,6 +232,9 @@ class StreamPlatformDetailAV(APIView):
 
 class WatchListAV(APIView):
 
+    permission_classes = [AdminOrReadOnly]
+    throttle_classes = [UserRateThrottle]
+
     def get(self, request):
         watchlist_items = WatchList.objects.all()
         serializer = WatchListSerializer(watchlist_items, many=True)
@@ -218,6 +249,8 @@ class WatchListAV(APIView):
             return Response(serializer.errors)
 
 class WatchListDetailAV(APIView):
+    
+    permission_classes = [AdminOrReadOnly]
 
     def get(self, request, pk):
         try:
