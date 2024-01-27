@@ -1,6 +1,8 @@
 from django.db import models
 import uuid
 
+from users.models import Profile
+
 # Create your models here.
 class Project(models.Model):
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
@@ -12,6 +14,7 @@ class Project(models.Model):
     tags = models.ManyToManyField('Tag', blank=True)
     vote_total = models.IntegerField(default=0, null=True, blank=True)
     vote_ratio = models.IntegerField(default=0, null=True, blank=True)
+    owner = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
 
 

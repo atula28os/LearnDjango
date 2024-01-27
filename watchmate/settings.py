@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # Custom Apps
     'watchlist_app',
     'user_app',
+    'users',
     'projects',
 
     # 3rd Party Apps
